@@ -13,12 +13,13 @@ local M = {}
 
 function M.rephrase_selection()
   local saved = clipboard.save()
+  local before = clipboard.read_plain()
 
   hs.eventtap.keyStroke({ "cmd" }, "c")
 
   hs.timer.doAfter(0.2, function()
     local selected = clipboard.read_plain()
-    if not selected or selected == "" then
+    if not selected or selected == "" or selected == before then
       hs.alert.show("Rephrase: nothing selected")
       clipboard.restore(saved)
       return
