@@ -33,6 +33,9 @@ os.execute(string.format(
 local function shell_for_test_service(account, shell_fn)
   shell_fn = shell_fn or function(cmd)
     local handle = io.popen(cmd)
+    if not handle then
+      return nil, false
+    end
     local output = handle:read("*a")
     local ok = handle:close()
     return output, ok and true or false
