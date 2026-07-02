@@ -1,6 +1,7 @@
 local keychain = require("rephrase.keychain")
 local clipboard = require("rephrase.clipboard")
 local html_to_rtf = require("rephrase.html_to_rtf")
+local unicode_format = require("rephrase.unicode_format")
 local providers = require("rephrase.providers")
 
 local config_ok, config = pcall(require, "rephrase.config")
@@ -55,13 +56,17 @@ function M.rephrase_selection()
         return
       end
 
-      local rtf = html_to_rtf.convert_to_rtf(html)
-      local plain = html_to_rtf.strip_tags(html)
-
-      if rtf then
-        clipboard.write_rich(rtf, plain)
+      if config.format_mode == "unicode" then
+        clipboard.write_plain(unicode_format.convert(html))
       else
-        clipboard.write_plain(plain)
+        local rtf = html_to_rtf.convert_to_rtf(html)
+        local plain = html_to_rtf.strip_tags(html)
+
+        if rtf then
+          clipboard.write_rich(rtf, plain)
+        else
+          clipboard.write_plain(plain)
+        end
       end
 
       hs.eventtap.keyStroke({ "cmd" }, "v")
