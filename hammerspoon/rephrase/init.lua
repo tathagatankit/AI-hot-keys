@@ -12,15 +12,27 @@ end
 
 local M = {}
 
+local pending_restore_timer = nil
+
+local function cancel_pending_restore()
+  if pending_restore_timer then
+    pending_restore_timer:stop()
+    pending_restore_timer = nil
+  end
+end
+
 function M.rephrase_selection()
+  cancel_pending_restore()
+
   local saved = clipboard.save()
-  local before = clipboard.read_plain()
+  local before_count = clipboard.change_count()
 
   hs.eventtap.keyStroke({ "cmd" }, "c")
 
   hs.timer.doAfter(0.2, function()
+    local after_count = clipboard.change_count()
     local selected = clipboard.read_plain()
-    if not selected or selected == "" or selected == before then
+    if after_count == before_count or not selected or selected == "" then
       hs.alert.show("Rephrase: nothing selected")
       clipboard.restore(saved)
       return
@@ -71,7 +83,8 @@ function M.rephrase_selection()
 
       hs.eventtap.keyStroke({ "cmd" }, "v")
 
-      hs.timer.doAfter(1, function()
+      pending_restore_timer = hs.timer.doAfter(1, function()
+        pending_restore_timer = nil
         clipboard.restore(saved)
       end)
     end)
