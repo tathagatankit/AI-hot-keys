@@ -62,19 +62,34 @@ if [ ! -f "$CONFIG_LUA" ]; then
   cp "$INSTALL_DIR/hammerspoon/rephrase/config.lua.example" "$CONFIG_LUA"
 fi
 
-# 7. Gemini API key -- prompt to set or replace it, hidden input either way
+# 7. Gemini API key -- prompt to set or replace it, hidden input either way.
+# Reads from /dev/tty explicitly, not plain stdin: when this script is run
+# as `curl ... | bash`, stdin is the pipe carrying the script's own source,
+# already at EOF by the time execution reaches here -- a plain `read` would
+# silently return empty instead of actually waiting for the user to type.
+# /dev/tty is the real keyboard/terminal regardless of how the script itself
+# was invoked.
 echo ""
 HAD_KEY=false
 if security find-generic-password -a "$USER" -s "$KEYCHAIN_SERVICE" -w >/dev/null 2>&1; then
   HAD_KEY=true
-  echo "A Gemini API key is already stored in Keychain."
-  read -r -s -p "Enter a new key to replace it, or press Enter to keep the existing one: " API_KEY
+fi
+
+# `-r /dev/tty` only checks permission bits, not whether it's actually
+# attachable (e.g. no controlling terminal at all), so actually try to open it.
+if (exec 3< /dev/tty) 2>/dev/null; then
+  if [ "$HAD_KEY" = true ]; then
+    echo "A Gemini API key is already stored in Keychain."
+    read -r -s -p "Enter a new key to replace it, or press Enter to keep the existing one: " API_KEY < /dev/tty
+  else
+    echo "Get a Gemini API key from https://aistudio.google.com/apikey"
+    echo "(separate from any ChatGPT/Gemini consumer subscription -- this is a pay-as-you-go API key)."
+    read -r -s -p "Paste your Gemini API key: " API_KEY < /dev/tty
+  fi
   echo ""
 else
-  echo "Get a Gemini API key from https://aistudio.google.com/apikey"
-  echo "(separate from any ChatGPT/Gemini consumer subscription -- this is a pay-as-you-go API key)."
-  read -r -s -p "Paste your Gemini API key: " API_KEY
-  echo ""
+  echo "No interactive terminal available to prompt for a Gemini API key -- skipping."
+  API_KEY=""
 fi
 
 if [ -n "${API_KEY:-}" ]; then
