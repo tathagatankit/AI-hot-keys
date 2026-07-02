@@ -1,10 +1,35 @@
-# rightClick — System-Wide Text Rephrase
+# AI-hot-keys — System-Wide Text Rephrase
 
 Select text in any macOS app, press a hotkey, and have it replaced in place
 with an LLM-rephrased version. See `docs/superpowers/specs/2026-07-01-system-wide-text-rephrase-design.md`
 for the full design.
 
-## One-time setup
+## Install
+
+```
+curl -fsSL https://raw.githubusercontent.com/tathagatankit/AI-hot-keys/main/install.sh | bash
+```
+
+Requires [Homebrew](https://brew.sh) to already be installed. The installer:
+installs Hammerspoon if needed, clones this repo to `~/AI-hot-keys`, wires it
+into your Hammerspoon config, and prompts you for a Gemini API key (stored
+only in Keychain, never in a file). It's safe to re-run any time — re-running
+updates the code and lets you leave your existing config/API key untouched
+(just press Enter when prompted).
+
+**One step it can't do for you:** macOS requires a human to personally
+approve Accessibility access for any app that simulates keystrokes — this is
+an OS security boundary, not something a script can bypass. The installer
+opens System Settings to the right pane for you; you still need to toggle
+Hammerspoon on there yourself (Touch ID/password required).
+
+If you'd rather not pipe a remote script into `bash`, clone the repo and run
+`./install.sh` locally instead — same script, so you can read it first.
+
+To remove everything: `~/AI-hot-keys/uninstall.sh` (asks for confirmation
+before deleting your API key or the cloned repo; always safe to run).
+
+### Manual setup (what the installer above automates)
 
 1. Install Hammerspoon: `brew install --cask hammerspoon`, then launch it once
    and grant it Accessibility permission when macOS prompts (System Settings ->
@@ -15,7 +40,7 @@ for the full design.
 4. Add `require("rephrase.init")` to `~/.hammerspoon/init.lua` (create the file
    if it doesn't exist).
 5. Copy the example config: `cp hammerspoon/rephrase/config.lua.example hammerspoon/rephrase/config.lua`
-   and adjust the hotkey/model if you want.
+   and adjust the hotkey/model/format_mode if you want.
 6. Get a Gemini API key from https://aistudio.google.com/apikey (separate from
    any ChatGPT/Gemini consumer subscription — this is a pay-as-you-go API key).
 7. Store the key in Keychain (never in a file):
