@@ -10,6 +10,11 @@ if not config_ok then
   return {}
 end
 
+-- Registers Hammerspoon with macOS Login Items so it (and this tool) comes
+-- back automatically after a restart/logout, not just while it happens to
+-- already be running. Idempotent -- safe to call on every config load.
+hs.autoLaunch(true)
+
 local M = {}
 
 local pending_restore_timer = nil
