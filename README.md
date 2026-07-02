@@ -1,65 +1,129 @@
-# AI-hot-keys — System-Wide Text Rephrase
+# AI-hot-keys
 
-Select text in any macOS app, press a hotkey, and have it replaced in place
-with an LLM-rephrased version. See `docs/superpowers/specs/2026-07-01-system-wide-text-rephrase-design.md`
-for the full design.
+Turn rough, typo-ridden text into a clean, well-written version — in place,
+in any app, with one keyboard shortcut. No copy-pasting into a chat window,
+no switching apps.
+
+## What this does
+
+Select some text anywhere on your Mac — an email draft, a Slack message, a
+note, a document — press **⌘⌥R**, and the selected text is replaced with an
+AI-rephrased version. Bold/bullet formatting is preserved as plain
+Unicode-styled text, so it always matches whatever font your document is
+already using, instead of pasting in with the wrong font.
+
+It runs quietly in the background (via [Hammerspoon](https://www.hammerspoon.org/))
+and works the same way in Gmail, Outlook, Word, Notes, Notion, and pretty
+much anywhere else you can select text — not just one specific app.
+
+Rephrasing is done by Google's Gemini API using your own API key, so usage
+is billed to your own account (typically pennies a month for personal use).
 
 ## Install
+
+Open Terminal and run:
 
 ```
 curl -fsSL https://raw.githubusercontent.com/tathagatankit/AI-hot-keys/main/install.sh | bash
 ```
 
-Requires [Homebrew](https://brew.sh) to already be installed. The installer:
-installs Hammerspoon if needed, clones this repo to `~/AI-hot-keys`, wires it
-into your Hammerspoon config, and prompts you for a Gemini API key (stored
-only in Keychain, never in a file). It's safe to re-run any time — re-running
-updates the code and lets you leave your existing config/API key untouched
-(just press Enter when prompted).
+This requires [Homebrew](https://brew.sh) to already be installed. The
+script will:
 
-**One step it can't do for you:** macOS requires a human to personally
-approve Accessibility access for any app that simulates keystrokes — this is
-an OS security boundary, not something a script can bypass. The installer
-opens System Settings to the right pane for you; you still need to toggle
-Hammerspoon on there yourself (Touch ID/password required).
+1. Install Hammerspoon (if you don't already have it)
+2. Set everything up automatically
+3. Ask you to paste in a Gemini API key — get one free at
+   [aistudio.google.com/apikey](https://aistudio.google.com/apikey) (it's
+   stored securely in macOS Keychain, never written to a file)
+4. Open System Settings to the one screen where **you'll need to manually
+   turn on a toggle** — macOS requires a real person to approve this kind of
+   permission, so no script (this one included) can do it for you:
 
-If you'd rather not pipe a remote script into `bash`, clone the repo and run
-`./install.sh` locally instead — same script, so you can read it first.
+   **System Settings → Privacy & Security → Accessibility → turn on Hammerspoon**
 
-To remove everything: `~/AI-hot-keys/uninstall.sh` (asks for confirmation
-before deleting your API key or the cloned repo; always safe to run).
+That's it — once the toggle is on, select some text anywhere and try **⌘⌥R**.
 
-### Manual setup (what the installer above automates)
+Re-running the same command later safely updates you to the latest version
+without touching your existing settings or API key.
 
-1. Install Hammerspoon: `brew install --cask hammerspoon`, then launch it once
-   and grant it Accessibility permission when macOS prompts (System Settings ->
-   Privacy & Security -> Accessibility).
-2. Install Lua for running this repo's tests standalone: `brew install lua`.
-3. Symlink this repo's Hammerspoon module into your Hammerspoon config dir:
-   `ln -s "$(pwd)/hammerspoon/rephrase" ~/.hammerspoon/rephrase`
-4. Add `require("rephrase.init")` to `~/.hammerspoon/init.lua` (create the file
-   if it doesn't exist).
-5. Copy the example config: `cp hammerspoon/rephrase/config.lua.example hammerspoon/rephrase/config.lua`
-   and adjust the hotkey/model/format_mode if you want.
-6. Get a Gemini API key from https://aistudio.google.com/apikey (separate from
-   any ChatGPT/Gemini consumer subscription — this is a pay-as-you-go API key).
-7. Store the key in Keychain (never in a file):
-   `security add-generic-password -a "$USER" -s "rightclick-rephrase" -w "YOUR_KEY_HERE"`
-8. In Hammerspoon's menu bar icon, choose "Reload Config".
-9. Select some text anywhere, press `⌘⌥R`, confirm it gets rephrased in place.
+### Alternate installation methods
 
-## Running tests
+**Don't want to pipe a script straight into `bash`?** That's a reasonable
+instinct. Clone the repo first so you can read `install.sh` before running
+it:
 
-`./hammerspoon/rephrase/test/run_tests.sh`
+```
+git clone https://github.com/tathagatankit/AI-hot-keys.git
+cd AI-hot-keys
+./install.sh
+```
 
-## Manual verification
+**Prefer to do it entirely by hand?** Every step the script automates:
 
-- [ ] TextEdit/Notes: select a plain paragraph, press ⌘⌥R, confirm replaced text is sensible and any bold/bullets render correctly.
-- [ ] CotEditor (plain-text editor): select text, press ⌘⌥R, confirm the replacement is clean plain text (no visible HTML tags or RTF control words).
-- [ ] Microsoft Word: select a paragraph, press ⌘⌥R, confirm bullets/bold render as real Word formatting, not literal asterisks or tags.
-- [ ] Notion desktop: select text in a page, press ⌘⌥R, confirm replacement lands with formatting.
-- [ ] Outlook desktop: select text in a draft email, press ⌘⌥R, confirm replacement lands correctly.
-- [ ] Gmail in Chrome: select text in a compose window, press ⌘⌥R, confirm replacement lands correctly (this is the hotkey path working in a browser, not the Phase 2 Chrome extension).
-- [ ] Select nothing (click without selecting), press ⌘⌥R, confirm a "nothing selected" HUD appears and the real clipboard is untouched.
-- [ ] Copy something to the clipboard, select text elsewhere, press ⌘⌥R, wait for the paste to complete, then paste (⌘V) again a few seconds later — confirm the original clipboard content comes back (clipboard restore works).
-- [ ] Temporarily rename the Keychain entry (`security rename` isn't a real flag — instead delete it: `security delete-generic-password -a "$USER" -s "rightclick-rephrase"`), press ⌘⌥R on a selection, confirm an error HUD appears instead of a silent failure or garbage paste. Re-add the key afterward.
+1. Install Hammerspoon: `brew install --cask hammerspoon`
+2. Clone this repo somewhere permanent, e.g. `git clone https://github.com/tathagatankit/AI-hot-keys.git ~/AI-hot-keys`
+3. Symlink it into Hammerspoon's config folder:
+   `ln -s ~/AI-hot-keys/hammerspoon/rephrase ~/.hammerspoon/rephrase`
+4. Add `require("rephrase.init")` to `~/.hammerspoon/init.lua` (create the
+   file if it doesn't exist)
+5. Copy the example config: `cp ~/AI-hot-keys/hammerspoon/rephrase/config.lua.example ~/AI-hot-keys/hammerspoon/rephrase/config.lua`
+6. Get a Gemini API key from [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+7. Store it in Keychain: `security add-generic-password -a "$USER" -s "rightclick-rephrase" -w "YOUR_KEY_HERE"`
+8. Launch Hammerspoon, then grant it Accessibility permission in System
+   Settings → Privacy & Security → Accessibility
+
+## Using it
+
+Select text, press **⌘⌥R**, wait a second — the text is replaced in place.
+
+**In Gmail**, drafting a quick reply:
+
+> hey can u send me the numbers for q3 asap thx
+
+becomes:
+
+> Could you please send me the Q3 numbers as soon as possible?
+
+**In Notes or Word**, cleaning up a hasty note:
+
+> need to reschedule the standup meeting for tmrw bc half the team is out sick, maybe friday instead
+
+becomes:
+
+> We need to reschedule tomorrow's standup meeting because half the team is
+> out sick. Can we move it to **Friday** instead?
+
+Key points that matter always, everywhere:
+> **Q3 numbers**, **Friday** — get styled so they stand out, without ever
+changing your document's font or size.
+
+If nothing happens, double check Hammerspoon has Accessibility permission
+(see the Install section above) and that a text selection actually existed
+when you pressed the hotkey.
+
+## Configuration
+
+After install, your personal settings live at
+`~/AI-hot-keys/hammerspoon/rephrase/config.lua`. You can change:
+
+- `hotkey` — the keyboard shortcut (default `⌘⌥R`)
+- `model` — which Gemini model to use
+- `format_mode` — `"unicode"` (default, always matches your document's font)
+  or `"rtf"` (real bold/bullet formatting, but may override your current
+  font on paste)
+
+After editing, reload Hammerspoon (menu bar icon → Reload Config) for
+changes to take effect.
+
+## Uninstall
+
+```
+~/AI-hot-keys/uninstall.sh
+```
+
+Asks for confirmation before deleting your stored API key or the cloned
+repo — safe to run any time.
+
+---
+
+For architecture details, see `docs/superpowers/specs/2026-07-01-system-wide-text-rephrase-design.md`.
