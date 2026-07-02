@@ -3,15 +3,21 @@ package.path = "./hammerspoon/?.lua;./hammerspoon/?/init.lua;" .. package.path
 local testkit = require("rephrase.test.testkit")
 local clipboard = require("rephrase.clipboard")
 
-local function make_fake_pb(initial_all_data, initial_string)
+local function make_fake_pb(initial_all_data, initial_string, initial_change_count)
   local fake = {
     _all_data = initial_all_data,
     _string = initial_string,
     _last_written = nil,
+    _change_count = initial_change_count or 0,
   }
   fake.readAllData = function() return fake._all_data end
-  fake.writeAllData = function(t) fake._last_written = t; return true end
+  fake.writeAllData = function(t)
+    fake._last_written = t
+    fake._change_count = fake._change_count + 1
+    return true
+  end
   fake.readString = function() return fake._string end
+  fake.changeCount = function() return fake._change_count end
   return fake
 end
 
@@ -39,5 +45,11 @@ local pb4 = make_fake_pb({}, nil)
 clipboard.write_plain("just plain", pb4)
 testkit.assert_eq(pb4._last_written["public.utf8-plain-text"], "just plain", "write_plain sets only the plain-text UTI")
 testkit.assert_eq(pb4._last_written["public.rtf"], nil, "write_plain does not set an RTF UTI")
+
+-- change_count
+local pb5 = make_fake_pb({}, "unchanged", 5)
+testkit.assert_eq(clipboard.change_count(pb5), 5, "change_count returns the pasteboard's current change count")
+clipboard.write_plain("new content", pb5)
+testkit.assert_eq(clipboard.change_count(pb5), 6, "change_count reflects a write that just happened")
 
 testkit.summary()

@@ -3,4 +3,11 @@ return {
   model = "gemini-3.5-flash",
   hotkey = { mods = { "cmd", "alt" }, key = "R" },
   max_input_chars = 8000,
+  -- "unicode" (default): renders bold via Unicode "Mathematical Bold" characters and
+  --   bullets as plain "• " prefixes, as plain text. Always inherits the destination's
+  --   font/size, at the cost of only styling Latin letters/digits within a bolded span.
+  -- "rtf": converts formatting to RTF via textutil. Preserves bold/bullets as real
+  --   formatting, but the pasted text's font/size may not match the destination app's
+  --   current font (observed in Word/Outlook/Gmail).
+  format_mode = "unicode",
 }

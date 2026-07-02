@@ -30,4 +30,9 @@ function M.write_plain(plain_text, pb)
   })
 end
 
+function M.change_count(pb)
+  pb = pb or hs.pasteboard
+  return pb.changeCount()
+end
+
 return M

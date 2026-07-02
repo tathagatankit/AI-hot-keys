@@ -1,6 +1,7 @@
 local keychain = require("rephrase.keychain")
 local clipboard = require("rephrase.clipboard")
 local html_to_rtf = require("rephrase.html_to_rtf")
+local unicode_format = require("rephrase.unicode_format")
 local providers = require("rephrase.providers")
 
 local config_ok, config = pcall(require, "rephrase.config")
@@ -11,15 +12,27 @@ end
 
 local M = {}
 
+local pending_restore_timer = nil
+
+local function cancel_pending_restore()
+  if pending_restore_timer then
+    pending_restore_timer:stop()
+    pending_restore_timer = nil
+  end
+end
+
 function M.rephrase_selection()
+  cancel_pending_restore()
+
   local saved = clipboard.save()
-  local before = clipboard.read_plain()
+  local before_count = clipboard.change_count()
 
   hs.eventtap.keyStroke({ "cmd" }, "c")
 
   hs.timer.doAfter(0.2, function()
+    local after_count = clipboard.change_count()
     local selected = clipboard.read_plain()
-    if not selected or selected == "" or selected == before then
+    if after_count == before_count or not selected or selected == "" then
       hs.alert.show("Rephrase: nothing selected")
       clipboard.restore(saved)
       return
@@ -55,18 +68,23 @@ function M.rephrase_selection()
         return
       end
 
-      local rtf = html_to_rtf.convert_to_rtf(html)
-      local plain = html_to_rtf.strip_tags(html)
-
-      if rtf then
-        clipboard.write_rich(rtf, plain)
+      if config.format_mode == "unicode" then
+        clipboard.write_plain(unicode_format.convert(html))
       else
-        clipboard.write_plain(plain)
+        local rtf = html_to_rtf.convert_to_rtf(html)
+        local plain = html_to_rtf.strip_tags(html)
+
+        if rtf then
+          clipboard.write_rich(rtf, plain)
+        else
+          clipboard.write_plain(plain)
+        end
       end
 
       hs.eventtap.keyStroke({ "cmd" }, "v")
 
-      hs.timer.doAfter(1, function()
+      pending_restore_timer = hs.timer.doAfter(1, function()
+        pending_restore_timer = nil
         clipboard.restore(saved)
       end)
     end)
