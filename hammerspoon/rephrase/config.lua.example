@@ -1,0 +1,6 @@
+return {
+  provider = "gemini",
+  model = "gemini-3.5-flash",
+  hotkey = { mods = { "cmd", "alt" }, key = "R" },
+  max_input_chars = 8000,
+}
